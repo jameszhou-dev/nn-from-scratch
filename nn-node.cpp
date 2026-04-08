@@ -7,49 +7,54 @@
 #include <set>
 using namespace std;
 
-class Node {
+class Value {
     public:
         float data;
         float grad = 0.0;
-        vector<Node*> prev;
+        vector<Value*> prev;
         string label = "";
         string operation = "";
-        function<void()> backward = [](){};
+        function<void()> _backward = [](){};
     
-    Node(float data) {
+    Value(float data) {
         this->data = data;
     }
-    Node(float data, vector<Node*> children, string operation) {
+    Value(float data, string label) {
+        this->data = data;
+        this->label = label;
+
+    }
+    Value(float data, vector<Value*> children, string operation) {
         this->data = data;
         prev = children;
         this->operation = operation;
     }
 
-    Node operator+(Node& other) { // addition with another node
-        vector<Node*> children;
+    Value operator+(Value& other) { // addition with another node
+        vector<Value*> children;
         children.push_back(this);
         children.push_back(&other);
-        Node out(this->data + other.data, children, "+");
+        Value out(this->data + other.data, children, "+");
 
-        out.backward = [this, &other, &out]() {
+        out._backward = [this, &other, &out]() {
             this->grad += 1.0 * out.grad;
             other.grad += 1.0 * out.grad;
         };
 
         return out;
     }
-    Node operator+(float data) { // addition with a float
-        Node other(data);
+    Value operator+(float data) { // addition with a float
+        Value other(data);
         return operator+(other);
     }
 
-    Node operator*(Node& other) { // multiplication with another node
-        vector<Node*> children;
+    Value operator*(Value& other) { // multiplication with another node
+        vector<Value*> children;
         children.push_back(this);
         children.push_back(&other);
-        Node out(this->data * other.data, children, "*");
+        Value out(this->data * other.data, children, "*");
 
-        out.backward = [this, &other, &out]() {
+        out._backward = [this, &other, &out]() {
             this->grad += other.data * out.grad;
             other.grad += this->data * out.grad;
         };
@@ -57,62 +62,62 @@ class Node {
         return out;
     }
 
-    Node operator*(float data) { // multiplication with a float
-        Node other(data);
+    Value operator*(float data) { // multiplication with a float
+        Value other(data);
         return operator*(other);
     }
 
-    Node pow(float other) { // power with float
-        vector<Node*> children;
+    Value pow(float other) { // power with float
+        vector<Value*> children;
         children.push_back(this);
-        Node out(powf(this->data, other), children, "^");
-        out.backward = [this, &other, &out]() {
+        Value out(powf(this->data, other), children, "^");
+        out._backward = [this, &other, &out]() {
             this->grad += other * (powf(this->data, other-1)) * out.grad;
         };
 
         return out;
     }
 
-    Node operator/(Node& other) { // division with another node
-        Node temp = other.pow(-1);
+    Value operator/(Value& other) { // division with another node
+        Value temp = other.pow(-1);
         return (*this) * temp;
     }
 
-    Node operator-(Node& other) { // subtraction with another node
-        Node temp = other * (-1);
+    Value operator-(Value& other) { // subtraction with another node
+        Value temp = other * (-1);
         return (*this) + temp;
     }
 
-    Node tanh() {
+    Value tanh() {
         float x = this->data;
         float t = (exp(2*x) - 1) / (exp(2*x) + 1);
-        vector<Node*> children;
+        vector<Value*> children;
         children.push_back(this);
-        Node out(t, children, "tanh");
-        out.backward = [this, &out, t]() {
+        Value out(t, children, "tanh");
+        out._backward = [this, &out, t]() {
             this->grad += (1-powf(t, 2)) * out.grad;
         };
         return out;
     }
 
-    Node node_exp() {
+    Value node_exp() {
         float x = this->data;
-        vector<Node*> children;
+        vector<Value*> children;
         children.push_back(this);
-        Node out(exp(x), children, "exp");
-        out.backward = [this, &out]() {
+        Value out(exp(x), children, "exp");
+        out._backward = [this, &out]() {
             this->grad += out.data * out.grad;
         };
         return out;
     }
 
     void backward() {
-        vector<Node*> topo;
-        set<Node*> visited;
-        function<void(Node*)> build_topo = [&](Node* node) {
+        vector<Value*> topo;
+        set<Value*> visited;
+        function<void(Value*)> build_topo = [&](Value* node) {
             if (!visited.count(node)) {
                 visited.insert(node);  
-                for (Node* child : node->prev) {
+                for (Value* child : node->prev) {
                     build_topo(child);
                 }
                 topo.push_back(node);
@@ -121,7 +126,7 @@ class Node {
         build_topo(this);
         this->grad = 1.0;
         for (int i = topo.size() - 1; i >= 0; i--) {
-            topo[i]->backward();
+            topo[i]->_backward();
         }
     }
 
@@ -130,17 +135,32 @@ class Node {
 
 
 int main() {
-    Node a(3.0, {}, "");
-    Node b(2.0, {}, "");
-    Node c = a * b;
-    Node d = a * 2;
-
-    cout << "c.data = " << c.data << endl; 
-    cout << "d.data = " << d.data << endl; 
-
-
-
+    Value x1(2.0, "x1"); // input 1
+    Value x2(0.0, "x2"); // input 2
+    Value w1(-3.0, "w1"); // weight 1
+    Value w2(1.0, "w2"); // weight 2
+    Value b(6.8813735870195432, "b"); // bias
+    // calculate weighted inputs
+    Value x1w1 = x1*w1;
+    x1w1.label = "x1*w1";
+    Value x2w2 = x2*w2;
+    x2w2.label = "x2*w2";
+    Value x1w1x2w2 = x1w1 + x2w2;
+    x1w1x2w2.label = "x1*w1 + x2*w2";
+    // add bias to weighted inputs
+    Value n = x1w1x2w2 + b; 
+    n.label = "n";
+    // apply activation function onto n
+    Value o = n.tanh();
+    o.label = "o";
+    // back prop on o
+    o.backward();
+    cout << "o.grad: " << o.grad << endl;
+    cout << "x1.grad: " << x1.grad << endl;
+    cout << "x2.grad: " << x2.grad << endl;
+    cout << "w1.grad: " << w1.grad << endl;
+    cout << "w2.grad: " << w2.grad << endl;
+    cout << "x1w1.grad: " << x1w1.grad << endl;
+    cout << "x2w2.grad: " << x2w2.grad << endl;
     return 0;
 }
-
-
