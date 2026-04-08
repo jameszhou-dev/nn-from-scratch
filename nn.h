@@ -61,6 +61,9 @@ class MLP {
 public:
     int num_inputs;
     std::vector<int> num_outputs;
+    std::vector<Layer> layers;
     MLP(int num_inputs, std::vector<int> num_outputs);
+    std::vector<Value> forward(std::vector<Value> inputs);
+    std::vector<Value> forward(std::vector<float> inputs);
 };
 #endif

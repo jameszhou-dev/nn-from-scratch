@@ -171,7 +171,7 @@ Layer::Layer(int num_inputs, int num_outputs) {
     }
 }
 
-vector<Value> Layer::forward(std::vector<Value> inputs){
+vector<Value> Layer::forward(vector<Value> inputs){
     vector<Value> output;
     for (int i = 0; i < num_outputs; i++) {
         output.push_back(neurons[i].forward(inputs));
@@ -179,7 +179,7 @@ vector<Value> Layer::forward(std::vector<Value> inputs){
     return output;
 }
 
-vector<Value> Layer::forward(std::vector<float> inputs){
+vector<Value> Layer::forward(vector<float> inputs){
     vector<Value> output;
     for (int i = 0; i < num_outputs; i++) {
         output.push_back(neurons[i].forward(inputs));
@@ -194,4 +194,23 @@ MLP::MLP(int num_inputs, vector<int> num_outputs) {
     vector<int> sz;
     sz.push_back(num_inputs);
     sz.insert(sz.end(), num_outputs.begin(), num_outputs.end());
+    for (int i = 0; i < num_outputs.size(); i++) {
+        layers.push_back(Layer(sz[i], sz[i+1]));
+    }
+}
+
+vector<Value> MLP::forward(vector<Value> inputs) {
+    vector<Value> output;
+    for (int i = 0; i < layers.size(); i++) {
+        output = layers[i].forward(inputs);
+    }
+    return output;
+}
+
+vector<Value> MLP::forward(vector<float> inputs) {
+    vector<Value> output;
+    for (int i = 0; i < layers.size(); i++) {
+        output = layers[i].forward(inputs);
+    }
+    return output;
 }
