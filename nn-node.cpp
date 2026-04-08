@@ -4,6 +4,7 @@
 #include <functional>
 #include <typeinfo>
 #include <cmath>
+#include <set>
 using namespace std;
 
 class Node {
@@ -89,9 +90,39 @@ class Node {
         children.push_back(this);
         Node out(t, children, "tanh");
         out.backward = [this, &out, t]() {
-            this->grad += (1-powf(t, 2))
+            this->grad += (1-powf(t, 2)) * out.grad;
         };
+        return out;
+    }
 
+    Node node_exp() {
+        float x = this->data;
+        vector<Node*> children;
+        children.push_back(this);
+        Node out(exp(x), children, "exp");
+        out.backward = [this, &out]() {
+            this->grad += out.data * out.grad;
+        };
+        return out;
+    }
+
+    void backward() {
+        vector<Node*> topo;
+        set<Node*> visited;
+        function<void(Node*)> build_topo = [&](Node* node) {
+            if (!visited.count(node)) {
+                visited.insert(node);  
+                for (Node* child : node->prev) {
+                    build_topo(child);
+                }
+                topo.push_back(node);
+            }
+        };
+        build_topo(this);
+        this->grad = 1.0;
+        for (int i = topo.size() - 1; i >= 0; i--) {
+            topo[i]->backward();
+        }
     }
 
 };
