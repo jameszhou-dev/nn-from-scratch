@@ -132,6 +132,12 @@ Neuron::Neuron(int num_inputs) {
     bias = Value::make(dist(gen));
 }
 
+vector<shared_ptr<Value>> Neuron::parameters() {
+    vector<shared_ptr<Value>> params;
+    params.insert(params.end(), weights.begin(), weights.end());
+    params.push_back(bias);
+    return params;
+}
 shared_ptr<Value> Neuron::forward(vector<shared_ptr<Value>> inputs) {
     shared_ptr<Value> sum = bias;
     for (int i = 0; i < this->num_inputs; i++) {
@@ -160,6 +166,16 @@ Layer::Layer(int num_inputs, int num_outputs) {
     }
 }
 
+vector<shared_ptr<Value>> Layer::parameters() {
+    vector<shared_ptr<Value>> params;
+    for (int i = 0; i < neurons.size(); i++) {
+        vector<shared_ptr<Value>> temp;
+        temp = neurons[i].parameters();
+        params.insert(params.end(), temp.begin(), temp.end());
+    }
+    return params;
+}
+
 vector<shared_ptr<Value>> Layer::forward(vector<shared_ptr<Value>> inputs) {
     vector<shared_ptr<Value>> output;
     for (int i = 0; i < num_outputs; i++) {
@@ -185,6 +201,15 @@ MLP::MLP(int num_inputs, vector<int> num_outputs) {
     for (int i = 0; i < num_outputs.size(); i++) {
         layers.push_back(Layer(sz[i], sz[i+1]));
     }
+}
+
+vector<shared_ptr<Value>> MLP::parameters() {
+    vector<shared_ptr<Value>> params;
+    for (int i = 0; i < layers.size(); i++) {
+        vector<shared_ptr<Value>> temp = layers[i].parameters();
+        params.insert(params.end(), temp.begin(), temp.end());
+    }
+    return params;
 }
 
 vector<shared_ptr<Value>> MLP::forward(vector<shared_ptr<Value>> inputs) {

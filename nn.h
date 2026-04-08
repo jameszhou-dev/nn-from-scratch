@@ -48,6 +48,7 @@ public:
     std::shared_ptr<Value> bias;
 
     Neuron(int num_inputs);
+    std::vector<shared_ptr<Value>> parameters();
     std::shared_ptr<Value> forward(std::vector<std::shared_ptr<Value>> inputs);
     std::shared_ptr<Value> forward(std::vector<float> inputs);
 };
@@ -59,6 +60,7 @@ public:
     std::vector<Neuron> neurons;
 
     Layer(int num_inputs, int num_outputs);
+    std::vector<shared_ptr<Value>> parameters();
     std::vector<std::shared_ptr<Value>> forward(std::vector<std::shared_ptr<Value>> inputs);
     std::vector<std::shared_ptr<Value>> forward(std::vector<float> inputs);
 };
@@ -68,6 +70,7 @@ public:
     std::vector<Layer> layers;
 
     MLP(int num_inputs, std::vector<int> num_outputs);
+    std::vector<std::shared_ptr<Value>> parameters();
     std::vector<std::shared_ptr<Value>> forward(std::vector<std::shared_ptr<Value>> inputs);
     std::vector<std::shared_ptr<Value>> forward(std::vector<float> inputs);
 };
