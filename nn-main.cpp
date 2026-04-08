@@ -32,13 +32,11 @@ int main() {
     cout << "x2w2.grad: " << x2w2.grad << endl;*/
 
     // test neuron
-    vector<float> x = {2.0, 3.0};
-    Layer layer(2, 3);
-    vector<Value> output = layer.forward(x);
-    cout << output.size() << endl;
-    for (Value val: output) {
-        cout << val << endl;
+    vector<float> x = {2.0, 3.0, -1.0};
+    MLP mlp(3, {4, 4, 1});
+    vector<Value> output = mlp.forward(x);
+    for (int i = 0; i < output.size(); i++) {
+        cout << output[i] << endl;
     }
 
-    return 0;
 }
