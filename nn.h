@@ -15,7 +15,8 @@ public:
     std::string label = "";
     std::string operation = "";
     std::function<void()> _backward = [](){};
-
+    
+    Value();
     Value(float data, std::vector<Value*> children, std::string operation);
     Value(float data);
     Value(float data, std::string label);
@@ -33,4 +34,33 @@ public:
     friend std::ostream& operator<<(std::ostream& os, const Value& value);
 };
 
+class Neuron {
+public:
+    int num_inputs;
+    std::vector<Value> weights;
+    Value bias;
+
+    Neuron(int num_inputs);
+    Value forward(std::vector<Value> inputs);
+    Value forward(std::vector<float> inputs);
+};
+
+class Layer {
+public:
+    int num_inputs;
+    int num_outputs;
+    std::vector<Neuron> neurons;
+    Layer(int num_inputs, int num_outputs);
+    std::vector<Value> forward(std::vector<Value> inputs);
+    std::vector<Value> forward(std::vector<float> inputs);
+
+};
+
+
+class MLP {
+public:
+    int num_inputs;
+    std::vector<int> num_outputs;
+    MLP(int num_inputs, std::vector<int> num_outputs);
+};
 #endif

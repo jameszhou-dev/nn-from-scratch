@@ -1,10 +1,20 @@
 #include "nn.h"
+#include <random>
 using namespace std;
+
+random_device rd;
+mt19937 gen(rd());
+uniform_real_distribution<float> dist(-1.0, 1.0);
+
 
 Value::Value(float data, vector<Value*> children, string operation){
     this->data = data;
     prev = children;
     this->operation = operation;
+}
+
+Value::Value() {
+    this->data = 0.0;
 }
 
 Value::Value(float data) {
@@ -124,3 +134,64 @@ ostream& operator<<(ostream& os, const Value& value) {
 }
 
 
+
+Neuron::Neuron(int num_inputs) {
+    this->num_inputs = num_inputs;
+    for (int i = 0; i < this->num_inputs; i++) {
+        weights.push_back(Value(dist(gen)));
+    }
+    bias = Value(dist(gen));
+}
+
+Value Neuron::forward(vector<Value> inputs) {
+    Value sum = bias;
+    for (int i = 0; i < this->num_inputs; i++) {
+        Value weighted_input = weights[i] * inputs[i];
+        sum = sum + weighted_input;
+    }
+    return sum.tanh();
+}
+
+Value Neuron::forward(vector<float> inputs) {
+    Value sum = bias;
+    for (int i = 0; i < this->num_inputs; i++) {
+        Value weighted_input = weights[i] * inputs[i];
+        sum = sum + weighted_input;
+    }
+    return sum.tanh();
+}
+
+
+
+Layer::Layer(int num_inputs, int num_outputs) {
+    this->num_inputs = num_inputs;
+    this->num_outputs = num_outputs;
+    for (int i = 0; i < num_outputs; i++) {
+        neurons.push_back(Neuron(num_inputs));
+    }
+}
+
+vector<Value> Layer::forward(std::vector<Value> inputs){
+    vector<Value> output;
+    for (int i = 0; i < num_outputs; i++) {
+        output.push_back(neurons[i].forward(inputs));
+    }
+    return output;
+}
+
+vector<Value> Layer::forward(std::vector<float> inputs){
+    vector<Value> output;
+    for (int i = 0; i < num_outputs; i++) {
+        output.push_back(neurons[i].forward(inputs));
+    }
+    return output;
+}
+
+
+
+
+MLP::MLP(int num_inputs, vector<int> num_outputs) {
+    vector<int> sz;
+    sz.push_back(num_inputs);
+    sz.insert(sz.end(), num_outputs.begin(), num_outputs.end());
+}

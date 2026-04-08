@@ -2,6 +2,7 @@
 using namespace std;
 
 int main() {
+    // test value
     Value x1(2.0, "x1"); // input 1
     Value x2(0.0, "x2"); // input 2
     Value w1(-3.0, "w1"); // weight 1
@@ -22,12 +23,22 @@ int main() {
     o.label = "o";
     // back prop on o
     o.backward();
-    cout << "o.grad: " << o.grad << endl;
+    /*cout << "o.grad: " << o.grad << endl;
     cout << "x1.grad: " << x1.grad << endl;
     cout << "x2.grad: " << x2.grad << endl;
     cout << "w1.grad: " << w1.grad << endl;
     cout << "w2.grad: " << w2.grad << endl;
     cout << "x1w1.grad: " << x1w1.grad << endl;
-    cout << "x2w2.grad: " << x2w2.grad << endl;
+    cout << "x2w2.grad: " << x2w2.grad << endl;*/
+
+    // test neuron
+    vector<float> x = {2.0, 3.0};
+    Layer layer(2, 3);
+    vector<Value> output = layer.forward(x);
+    cout << output.size() << endl;
+    for (Value val: output) {
+        cout << val << endl;
+    }
+
     return 0;
 }
