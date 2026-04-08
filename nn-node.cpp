@@ -3,6 +3,7 @@
 #include <string>
 #include <functional>
 #include <typeinfo>
+#include <cmath>
 using namespace std;
 
 class Node {
@@ -41,20 +42,72 @@ class Node {
         return operator+(other);
     }
 
+    Node operator*(Node& other) { // multiplication with another node
+        vector<Node*> children;
+        children.push_back(this);
+        children.push_back(&other);
+        Node out(this->data * other.data, children, "*");
 
+        out.backward = [this, &other, &out]() {
+            this->grad += other.data * out.grad;
+            other.grad += this->data * out.grad;
+        };
+
+        return out;
+    }
+
+    Node operator*(float data) { // multiplication with a float
+        Node other(data);
+        return operator*(other);
+    }
+
+    Node pow(float other) { // power with float
+        vector<Node*> children;
+        children.push_back(this);
+        Node out(powf(this->data, other), children, "^");
+        out.backward = [this, &other, &out]() {
+            this->grad += other * (powf(this->data, other-1)) * out.grad;
+        };
+
+        return out;
+    }
+
+    Node operator/(Node& other) { // division with another node
+        Node temp = other.pow(-1);
+        return (*this) * temp;
+    }
+
+    Node operator-(Node& other) { // subtraction with another node
+        Node temp = other * (-1);
+        return (*this) + temp;
+    }
+
+    Node tanh() {
+        float x = this->data;
+        float t = (exp(2*x) - 1) / (exp(2*x) + 1);
+        vector<Node*> children;
+        children.push_back(this);
+        Node out(t, children, "tanh");
+        out.backward = [this, &out, t]() {
+            this->grad += (1-powf(t, 2))
+        };
+
+    }
 
 };
 
 
 
 int main() {
-    Node a(1.0, {}, "");
+    Node a(3.0, {}, "");
     Node b(2.0, {}, "");
-    Node c = a + b;
-    Node d = a + 1;
+    Node c = a * b;
+    Node d = a * 2;
 
     cout << "c.data = " << c.data << endl; 
     cout << "d.data = " << d.data << endl; 
+
+
 
     return 0;
 }
