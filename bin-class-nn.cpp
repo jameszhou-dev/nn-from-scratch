@@ -36,5 +36,9 @@ int main() {
     cout << "loss: " << *loss << endl;
     loss->backward();
     cout << "loss after: " << *loss << endl;
+    vector<shared_ptr<Value>> params = mlp.parameters();
+    for (int i = 0; i < params.size(); i++) {
+        cout << *params[i] << endl; // prints out every neurons data and grad
+    }
     return 0;
 }
