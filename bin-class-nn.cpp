@@ -44,10 +44,16 @@ int main() {
     int epoch = 0;
     for (int i = 0; i < 17; i++) {
         cout << "epoch: " << epoch << " " << endl;
+        // forward pass
         vector<shared_ptr<Value>> ypred = forward_pass(mlp, xs);
         shared_ptr<Value> loss = calc_loss(ypred, ys);
-        loss->backward();
+        // zero grad
         vector<shared_ptr<Value>> params = mlp.parameters();
+        for (int i = 0; i < params.size(); i++) {
+            params[i]->grad = 0;
+        }
+        // backward pass
+        loss->backward();
         for (int i = 0; i < params.size(); i++) { 
             params[i]->data = params[i]->data + (-0.1 * params[i]->grad); // change data based on gradient
         }
