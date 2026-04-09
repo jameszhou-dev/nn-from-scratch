@@ -3,11 +3,13 @@ using namespace std;
 
 vector<shared_ptr<Value>> forward_pass(MLP &mlp, vector<vector<float>> xs) {
     vector<shared_ptr<Value>> ypred;
+    cout << "predicted vals: ";
     for (int i = 0; i < xs.size(); i++) {
         vector<shared_ptr<Value>> output = mlp.forward(xs[i]);
         ypred.push_back(output[0]);
-        cout << "prediction: " << *ypred[i] << endl;
+        cout << ypred[i]->data << " ";
     }
+    cout << endl;
     return ypred;
 }
 
@@ -37,17 +39,21 @@ int main() {
         {0.5, 1.0, 1.0},
         {1.0, 1.0, -1.0}};
     float ys[] = {1.0, -1.0, -1.0, 1.0};
-    
-    vector<shared_ptr<Value>> ypred = forward_pass(mlp, xs);
-    shared_ptr<Value> loss = calc_loss(ypred, ys);
-    cout << "loss: " << *loss << endl;
-    loss->backward();
-    vector<shared_ptr<Value>> params = mlp.parameters();
-    for (int i = 0; i < params.size(); i++) { 
-        params[i]->data = params[i]->data + (-0.01 * params[i]->grad); // change data based on gradient
+
+
+    int epoch = 0;
+    for (int i = 0; i < 17; i++) {
+        cout << "epoch: " << epoch << " " << endl;
+        vector<shared_ptr<Value>> ypred = forward_pass(mlp, xs);
+        shared_ptr<Value> loss = calc_loss(ypred, ys);
+        loss->backward();
+        vector<shared_ptr<Value>> params = mlp.parameters();
+        for (int i = 0; i < params.size(); i++) { 
+            params[i]->data = params[i]->data + (-0.1 * params[i]->grad); // change data based on gradient
+        }
+        cout << "loss: " << *loss << endl;
+        cout << "___________________________________" << endl;
+        epoch+=1;
     }
-    ypred = forward_pass(mlp, xs);
-    loss = calc_loss(ypred, ys);
-    cout << "loss: " << *loss << endl;
     return 0;
 }
