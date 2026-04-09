@@ -7,6 +7,7 @@
 #include <random>
 using namespace std;
 
+
 struct iris_row{
     vector<float> features;
     int label;
@@ -72,7 +73,25 @@ shared_ptr<Value> calc_loss(vector<vector<shared_ptr<Value>>> y_pred, vector<flo
     loss = *loss * mean;
     return loss;
 }
+void train_test_split(vector<iris_row>& dataset, 
+                      vector<vector<float>>& x_train, vector<float>& y_train,
+                      vector<vector<float>>& x_test,  vector<float>& y_test, int random_seed,
+                      float test_size = 0.2) { 
 
+    shuffle(dataset.begin(), dataset.end(), default_random_engine(random_seed));
+
+    int test_count = (int)(dataset.size() * test_size); 
+    int train_count = dataset.size() - test_count;      
+
+    for (int i = 0; i < train_count; i++) {
+        x_train.push_back(dataset[i].features);
+        y_train.push_back(dataset[i].label);
+    }
+    for (int i = train_count; i < dataset.size(); i++) {
+        x_test.push_back(dataset[i].features);
+        y_test.push_back(dataset[i].label);
+    }
+}
 
 int main() {
     vector <iris_row> iris_dataset;
@@ -81,44 +100,64 @@ int main() {
         cout << "error reading file" << endl;
         return 1;
     }
+    mt19937 rng(67);
+    uniform_int_distribution<int> dist(0, 1000000);
+    int total_accuracy = 0;
+    for (int x = 1; x < 25+1; x++) {
 
-    MLP mlp(4, {16, 8, 3}); // 4 inputs, 2 hidden layers (16 neurons, 8 neurons), 3 output
-    vector<vector<float>> x;
-    vector<float> y;
-    for (int i = 0; i < iris_dataset.size(); i++) {
-        x.push_back(iris_dataset[i].features);
-        y.push_back(iris_dataset[i].label);
-    }
-    int num_epochs = 100;
-    double learning_rate = 0.001;
-    int batch_size = 16;
-    for (int i = 1; i < num_epochs + 1; i++) {
-        cout << "epoch: " << i;
-        shuffle(iris_dataset.begin(), iris_dataset.end(), default_random_engine(i)); // shuffle dataset each time
-        int batch_size = 16; // num batches
-        shared_ptr<Value> loss;
-        for (int i = 0; i < x.size(); i += batch_size) {
-            int end = min((int)x.size(), i + batch_size);
-            vector<vector<float>> x_batch(x.begin() + i, x.begin() + end);
-            vector<float> y_batch(y.begin() + i, y.begin() + end);
-
-            // forward pass
-            vector<vector<shared_ptr<Value>>> y_pred = forward_pass(mlp, x_batch);
-            // zero grad
-            vector<shared_ptr<Value>> params = mlp.parameters();
-            for (int i = 0; i < params.size(); i++) {   
-                params[i]->grad = 0;
-            }
-            // calculate loss
-            loss = calc_loss(y_pred, y_batch);
-            // backward pass
-            loss->backward();
-            learning_rate = 0.001 * (1.0 / (1.0 + 0.01 * i)); // decrease learning rate each epoch
-            for (int i = 0; i < params.size(); i++) { 
-                params[i]->data = params[i]->data + (-(learning_rate) * params[i]->grad); 
+        vector<vector<float>> x_train;
+        vector<vector<float>> x_test;
+        vector<float> y_train;
+        vector<float> y_test;
+        int random_seed = x * dist(rng);
+        train_test_split(iris_dataset, x_train, y_train, x_test, y_test, random_seed);
+        MLP mlp(4, {16, 8, 3}); // 4 inputs, 2 hidden layers (16 neurons, 8 neurons), 3 output
+        int num_epochs = 100;
+        double learning_rate = 0.05;
+        // train
+        for (int i = 1; i < num_epochs + 1; i++) {
+            int batch_size = 8; // num batches
+            shared_ptr<Value> loss;
+            for (int i = 0; i < x_train.size(); i += batch_size) {
+                int end = min((int)x_train.size(), i + batch_size);
+                vector<vector<float>> x_batch(x_train.begin() + i, x_train.begin() + end);
+                vector<float> y_batch(y_train.begin() + i, y_train.begin() + end);
+                // zero grad
+                vector<shared_ptr<Value>> params = mlp.parameters();
+                for (int i = 0; i < params.size(); i++) {   
+                    params[i]->grad = 0;
+                }
+                // forward pass
+                vector<vector<shared_ptr<Value>>> y_pred = forward_pass(mlp, x_batch);
+                
+                // calculate loss
+                loss = calc_loss(y_pred, y_batch);
+                // backward pass
+                loss->backward();
+                //learning_rate = 0.01 * (1.0 / (1.0 + 0.01 * i)); // decrease learning rate each epoch
+                for (int i = 0; i < params.size(); i++) { 
+                    params[i]->data = params[i]->data + (-(learning_rate) * params[i]->grad); 
+                }
             }
         }
-        cout << " loss: " << loss->data << endl;
+        vector<vector<shared_ptr<Value>>> y_pred = forward_pass(mlp, x_test);
+        int num_correct = 0;
+        for (int i = 0; i < y_pred.size(); i++) {
+            int label = 0;  
+            float largest = y_pred[i][0]->data;
+            for (int j = 1; j < y_pred[i].size(); j++) {  
+                if (y_pred[i][j]->data > largest) {
+                    largest = y_pred[i][j]->data;
+                    label = j;
+                }
+            }
+            if (label == y_test[i]) {
+                num_correct++;
+            }
+        }
+        total_accuracy += (float) num_correct / y_test.size() * 100.0f;
+        cout << "accuracy: " << (float) num_correct / y_test.size() * 100.0f << endl;
+        cout << "average_accuracy: " << total_accuracy / x << "%" << endl;
     }
     return 0;
 }
