@@ -4,6 +4,7 @@
 #include <vector>  
 #include <string> 
 #include <algorithm>
+#include <random>
 using namespace std;
 
 struct iris_row{
@@ -72,6 +73,7 @@ shared_ptr<Value> calc_loss(vector<vector<shared_ptr<Value>>> y_pred, vector<flo
     return loss;
 }
 
+
 int main() {
     vector <iris_row> iris_dataset;
     string path = "data/iris.csv";
@@ -79,6 +81,7 @@ int main() {
         cout << "error reading file" << endl;
         return 1;
     }
+
     MLP mlp(4, {16, 8, 3}); // 4 inputs, 2 hidden layers (16 neurons, 8 neurons), 3 output
     vector<vector<float>> x;
     vector<float> y;
@@ -86,28 +89,36 @@ int main() {
         x.push_back(iris_dataset[i].features);
         y.push_back(iris_dataset[i].label);
     }
-    int num_epochs = 500;
+    int num_epochs = 100;
     double learning_rate = 0.001;
+    int batch_size = 16;
     for (int i = 1; i < num_epochs + 1; i++) {
         cout << "epoch: " << i;
-        // forward pass
-        vector<vector<shared_ptr<Value>>> y_pred = forward_pass(mlp, x);
-        // zero grad
-        vector<shared_ptr<Value>> params = mlp.parameters();
-        for (int i = 0; i < params.size(); i++) {
-            params[i]->grad = 0;
-        }
-        // calculate loss
-        shared_ptr<Value> loss = calc_loss(y_pred, y);
-        // backward pass
-        loss->backward();
-        learning_rate = 0.001 * (1.0 / (1.0 + 0.01 * i));
-        for (int i = 0; i < params.size(); i++) { 
-            params[i]->data = params[i]->data + (-(learning_rate) * params[i]->grad); 
+        shuffle(iris_dataset.begin(), iris_dataset.end(), default_random_engine(i)); // shuffle dataset each time
+        int batch_size = 16; // num batches
+        shared_ptr<Value> loss;
+        for (int i = 0; i < x.size(); i += batch_size) {
+            int end = min((int)x.size(), i + batch_size);
+            vector<vector<float>> x_batch(x.begin() + i, x.begin() + end);
+            vector<float> y_batch(y.begin() + i, y.begin() + end);
+
+            // forward pass
+            vector<vector<shared_ptr<Value>>> y_pred = forward_pass(mlp, x_batch);
+            // zero grad
+            vector<shared_ptr<Value>> params = mlp.parameters();
+            for (int i = 0; i < params.size(); i++) {   
+                params[i]->grad = 0;
+            }
+            // calculate loss
+            loss = calc_loss(y_pred, y_batch);
+            // backward pass
+            loss->backward();
+            learning_rate = 0.001 * (1.0 / (1.0 + 0.01 * i)); // decrease learning rate each epoch
+            for (int i = 0; i < params.size(); i++) { 
+                params[i]->data = params[i]->data + (-(learning_rate) * params[i]->grad); 
+            }
         }
         cout << " loss: " << loss->data << endl;
     }
-
-
     return 0;
 }
