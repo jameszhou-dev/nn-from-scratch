@@ -3,6 +3,7 @@
 #include <sstream>  
 #include <vector>  
 #include <string> 
+#include <algorithm>
 using namespace std;
 
 struct iris_row{
@@ -65,6 +66,9 @@ shared_ptr<Value> calc_loss(vector<vector<shared_ptr<Value>>> y_pred, vector<flo
             loss = new_loss;
         }
     }
+    float n = (float)(y_pred.size() * y_pred[0].size());
+    shared_ptr<Value> mean = Value::make(1.0f / n);
+    loss = *loss * mean;
     return loss;
 }
 
